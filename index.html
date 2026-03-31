@@ -1,0 +1,865 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Company Org Chart</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Serif+Display&display=swap');
+
+  :root {
+    --bg: #f5f4f0;
+    --surface: #ffffff;
+    --border: #e2e0d8;
+    --text: #1a1916;
+    --text-muted: #6b6860;
+    --accent: #2d5a3d;
+    --accent-light: #e8f0eb;
+    --line: #d4d1c8;
+    --shadow: 0 1px 6px rgba(0,0,0,0.07);
+    --shadow-hover: 0 4px 16px rgba(0,0,0,0.12);
+    --indent: 24px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 13px 22px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 1px 8px rgba(0,0,0,0.06);
+  }
+
+  header h1 {
+    font-family: 'DM Serif Display', serif;
+    font-size: 19px;
+    font-weight: 400;
+    color: var(--text);
+    white-space: nowrap;
+  }
+
+  .controls { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
+
+  .search-wrap { position: relative; }
+  .search-wrap svg { position: absolute; left: 9px; top: 50%; transform: translateY(-50%); color: var(--text-muted); pointer-events: none; }
+  input[type="search"] {
+    padding: 6px 10px 6px 29px;
+    border: 1px solid var(--border); border-radius: 7px;
+    font-family: inherit; font-size: 13px; background: var(--bg); color: var(--text);
+    width: 190px; outline: none; transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  input[type="search"]:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(45,90,61,0.1); }
+
+  .btn {
+    padding: 6px 11px; border: 1px solid var(--border); border-radius: 7px;
+    background: var(--surface); font-family: inherit; font-size: 12px; color: var(--text);
+    cursor: pointer; transition: all 0.15s; white-space: nowrap;
+  }
+  .btn:hover { background: var(--accent-light); border-color: var(--accent); color: var(--accent); }
+  .btn.active { background: var(--accent); color: white; border-color: var(--accent); }
+
+  .app-body { display: flex; flex: 1; overflow: hidden; height: calc(100vh - 54px); }
+
+  .tree-panel { flex: 1; overflow: auto; padding: 14px 18px; }
+
+  /* ── Detail sidebar ── */
+  .detail-sidebar {
+    width: 250px; flex-shrink: 0; background: var(--surface);
+    border-left: 1px solid var(--border); overflow-y: auto; padding: 18px 15px;
+  }
+  .detail-sidebar.empty { display: flex; align-items: center; justify-content: center; color: var(--text-muted); font-size: 13px; text-align: center; }
+  .detail-avatar { width: 46px; height: 46px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 16px; margin-bottom: 10px; }
+  .detail-name { font-family: 'DM Serif Display', serif; font-size: 16px; line-height: 1.2; margin-bottom: 3px; }
+  .detail-job-title { font-size: 11.5px; color: var(--text-muted); line-height: 1.5; margin-bottom: 10px; }
+  .detail-label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.6px; color: var(--text-muted); display: block; margin-bottom: 2px; }
+  .detail-meta { font-size: 12px; margin-bottom: 8px; }
+  .detail-section-title { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.6px; color: var(--text-muted); margin: 13px 0 5px; border-top: 1px solid var(--border); padding-top: 11px; }
+  .detail-report-row { padding: 5px 7px; border-radius: 6px; cursor: pointer; transition: background 0.1s; margin-bottom: 2px; }
+  .detail-report-row:hover { background: var(--accent-light); }
+  .detail-report-name { font-size: 12px; font-weight: 500; }
+  .detail-report-title { font-size: 11px; color: var(--text-muted); }
+
+  /* ── Tree structure ── */
+  .tree-root { list-style: none; }
+  .tree-node { position: relative; }
+  .node-row { display: flex; align-items: center; padding: 2px 0; }
+  .guides { display: flex; flex-shrink: 0; }
+  .guide-segment { width: var(--indent); flex-shrink: 0; position: relative; align-self: stretch; }
+  .guide-segment.has-line::before { content:''; position:absolute; left:11px; top:0; bottom:0; width:1px; background:var(--line); }
+  .guide-segment.elbow::before { content:''; position:absolute; left:11px; top:0; bottom:50%; width:1px; background:var(--line); }
+  .guide-segment.elbow::after { content:''; position:absolute; left:11px; top:50%; width:11px; height:1px; background:var(--line); }
+
+  .toggle-btn {
+    width: 16px; height: 16px; border-radius: 3px; background: var(--bg); border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center; font-size: 9px; flex-shrink: 0;
+    cursor: pointer; color: var(--text-muted); transition: all 0.1s; margin-right: 3px; font-weight: 700; line-height: 1;
+  }
+  .toggle-btn:hover { background: var(--accent-light); border-color: var(--accent); color: var(--accent); }
+  .toggle-spacer { width: 16px; flex-shrink: 0; margin-right: 3px; }
+
+  /* ── Department header node ── */
+  .dept-node {
+    display: flex; align-items: center; gap: 7px; padding: 5px 9px;
+    border-radius: 7px; cursor: pointer; flex: 1; min-width: 0;
+    transition: background 0.1s; border: 1.5px solid transparent;
+    user-select: none;
+  }
+  .dept-node:hover { border-color: var(--border); background: rgba(0,0,0,0.03); }
+
+  .dept-icon { font-size: 13px; flex-shrink: 0; }
+  .dept-label { font-size: 12px; font-weight: 700; letter-spacing: 0.1px; }
+  .dept-sublabel { font-size: 11px; color: var(--text-muted); margin-top: 1px; }
+  .dept-count { font-size: 10px; color: var(--text-muted); margin-left: auto; flex-shrink: 0; background: var(--bg); border: 1px solid var(--border); border-radius: 9px; padding: 1px 6px; }
+
+  /* Color strip on left of dept node */
+  .dept-strip { width: 3px; height: 28px; border-radius: 2px; flex-shrink: 0; }
+
+  /* ── Person card ── */
+  .node-card {
+    display: flex; align-items: center; gap: 7px; padding: 4px 8px;
+    border-radius: 7px; border: 1px solid transparent;
+    transition: background 0.1s, border-color 0.1s, box-shadow 0.1s;
+    flex: 1; min-width: 0; cursor: pointer;
+  }
+  .node-card:hover { background: var(--surface); border-color: var(--border); box-shadow: var(--shadow); }
+  .node-card.selected { background: var(--accent-light); border-color: var(--accent); }
+  .node-card.highlighted { background: #fffbee; border-color: #e6a817; }
+  .node-card.selected.highlighted { background: var(--accent-light); border-color: var(--accent); }
+
+  .node-avatar { width: 27px; height: 27px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; flex-shrink: 0; }
+  .node-info { min-width: 0; flex: 1; }
+  .node-name { font-size: 12.5px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.3; }
+  .node-title { font-size: 10.5px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .node-role-tag { font-size: 9.5px; font-weight: 600; padding: 1px 5px; border-radius: 3px; flex-shrink: 0; margin-left: 2px; }
+  .reports-count { font-size: 10px; color: var(--text-muted); flex-shrink: 0; background: var(--bg); border: 1px solid var(--border); border-radius: 9px; padding: 1px 5px; }
+
+  .children-list { list-style: none; }
+  .children-list.hidden { display: none; }
+
+  /* ── CEO card ── */
+  .ceo-wrap { margin-bottom: 4px; }
+  .ceo-card {
+    display: inline-flex; align-items: center; gap: 10px; padding: 8px 14px;
+    border-radius: 10px; border: 2px solid var(--accent);
+    background: var(--accent-light); cursor: pointer;
+    transition: box-shadow 0.15s;
+  }
+  .ceo-card:hover { box-shadow: var(--shadow-hover); }
+  .ceo-card.selected { box-shadow: 0 0 0 3px rgba(45,90,61,0.25); }
+  .ceo-avatar { width: 36px; height: 36px; border-radius: 50%; background: var(--accent); color: white; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px; flex-shrink: 0; }
+  .ceo-name { font-size: 14px; font-weight: 700; }
+  .ceo-title { font-size: 11px; color: var(--text-muted); }
+
+  /* ── Placeholder (empty) dept ── */
+  .dept-placeholder {
+    font-size: 11px; color: var(--text-muted); font-style: italic;
+    padding: 3px 8px; margin-left: 4px;
+  }
+
+  /* ── List view ── */
+  .list-view { display: none; flex: 1; overflow-y: auto; padding: 14px 18px; }
+  .list-view.active { display: block; }
+  .list-item { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 9px 13px; margin-bottom: 5px; display: flex; align-items: center; gap: 11px; cursor: pointer; transition: all 0.1s; }
+  .list-item:hover { box-shadow: var(--shadow); border-color: var(--accent); }
+  .list-item.highlighted { border-color: #e6a817; background: #fffbee; }
+  .li-avatar { width: 33px; height: 33px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 12px; flex-shrink: 0; }
+  .li-name { font-weight: 600; font-size: 13px; }
+  .li-title { font-size: 11px; color: var(--text-muted); }
+  .li-right { margin-left: auto; text-align: right; flex-shrink: 0; }
+  .li-dept { font-size: 10px; font-weight: 600; padding: 1px 6px; border-radius: 4px; display: inline-block; margin-top: 3px; }
+
+  .empty-msg { text-align: center; padding: 50px 20px; color: var(--text-muted); font-size: 14px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>📋 Org Chart</h1>
+  <div class="controls">
+    <div class="search-wrap">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      <input type="search" id="searchInput" placeholder="Search name or title…" autocomplete="off">
+    </div>
+    <button class="btn active" id="btnTree" onclick="setView('tree')">🌳 Tree</button>
+    <button class="btn" id="btnList" onclick="setView('list')">☰ List</button>
+    <button class="btn" onclick="expandAll()">Expand All</button>
+    <button class="btn" onclick="collapseAll()">Collapse All</button>
+  </div>
+</header>
+
+<div class="app-body">
+  <div class="tree-panel" id="treePanel">
+    <div id="treeRoot"></div>
+    <div class="empty-msg" id="emptyMsg" style="display:none">No results found.</div>
+  </div>
+  <div class="list-view" id="listView"></div>
+  <div class="detail-sidebar empty" id="detailSidebar">
+    <div><div style="font-size:26px;margin-bottom:8px">👤</div>Click any person<br>to see details</div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════
+//  ORG TREE DEFINITION
+//  Structure: nested objects
+//    { type:'dept',  label, sublabel?, color, icon, id, children[] }
+//    { type:'person', name, title, roleTag?, color, children[] }
+//    { type:'placeholder', label }   ← empty dept header
+// ═══════════════════════════════════════════════════════
+
+const C = {
+  ops:   '#0ea5e9',
+  eng:   '#3b82f6',
+  mfg:   '#ec4899',
+  sales: '#22c55e',
+  qual:  '#eab308',
+  admin: '#a855f7',
+  pm:    '#f97316',
+  cc:    '#06b6d4',
+  fin:   '#10b981',
+  biz:   '#e84393',
+};
+
+// Avatar bg/text per color
+const BG = {
+  [C.ops]:   ['#e0f2fe','#0369a1'],
+  [C.eng]:   ['#dbeafe','#1d4ed8'],
+  [C.mfg]:   ['#fce7f3','#9d174d'],
+  [C.sales]: ['#dcfce7','#15803d'],
+  [C.qual]:  ['#fef9c3','#854d0e'],
+  [C.admin]: ['#ede9fe','#5b21b6'],
+  [C.pm]:    ['#ffedd5','#c2410c'],
+  [C.cc]:    ['#cffafe','#0e7490'],
+  [C.fin]:   ['#d1fae5','#065f46'],
+  [C.biz]:   ['#fce7f3','#9d174d'],
+};
+function bg(c) { return BG[c] || ['#f3f4f6','#374151']; }
+const initials = n => n.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+
+function p(name, title, color, roleTag, children=[]) {
+  return { type:'person', name, title, color, roleTag, children };
+}
+function d(label, color, icon, children, sublabel='', id='') {
+  return { type:'dept', label, sublabel, color, icon, id: id||label, children };
+}
+function ph(label) {
+  return { type:'placeholder', label };
+}
+
+const TREE = {
+  type: 'ceo',
+  name: 'Robert Herrmann',
+  title: 'Chief Executive Officer',
+  children: [
+
+    // ══════════════════════════════
+    //  BUSINESS DEVELOPMENT
+    // ══════════════════════════════
+    d('Business Development', C.biz, '💼', [
+      p('Robert Herrmann', 'Chief Commerce Officer', C.biz, 'CCO', [
+
+        d('Product Mgmt – SUT', C.pm, '📦', [
+          p('Todd Herrmann', 'Product Manager – SUT', C.pm, null, [
+            p('Erik Nygard', 'Design Engineer', C.eng),
+          ]),
+        ]),
+
+        d('Product Mgmt – Equipment', C.pm, '🔩', [
+          p('Jason Lesch', 'Product Manager – Equipment', C.pm, null, [
+            p('Garrett Herrmann', 'Lead Design Engineer', C.eng),
+            p('Matthew Sudbrink', 'Lead Design Engineer', C.eng),
+          ]),
+        ]),
+
+        d('Marketing', C.sales, '📣', [
+          p('Miranda Gudeman', 'Marketing Manager', C.sales),
+        ]),
+
+        d('Sales Manager', C.sales, '🤝', [
+          p('Robert Herrmann', 'Sales Manager', C.sales, 'SM', [
+
+            d('Customer Service', C.cc, '💬', [
+              p('Keith Wiegand', 'CustomerCare Manager', C.cc),
+            ]),
+
+            d('Inside Sales', C.sales, '📞', [
+              p('Miranda Gudeman', 'Marketing Manager / ISM', C.sales, 'ISM', [
+                p('JC Dempsey', 'Inside Sales Manager', C.sales),
+              ]),
+            ]),
+
+            d('Direct Sales', C.sales, '🎯', [
+              p('Jeff Sallack',     'Business Development Manager', C.sales),
+              p('Joseph Klotzle',   'Account Manager',              C.sales),
+              p('Michael Stewart',  'Regional Sales Manager',       C.sales),
+              p('Neil Weaver',      'Regional Sales Manager',       C.sales),
+              p('Pedro Rosas',      'Regional Sales Manager',       C.sales),
+              p('Wayne Fearn',      'Regional Sales Manager',       C.sales),
+            ]),
+          ]),
+        ]),
+
+        d('Technical Sales', C.sales, '🔬', [
+          p('Aaron Funk', 'Commercial Engineering Manager', C.sales, null, [
+            p('Thomas McCarty', 'Field Application Specialist', C.sales),
+          ]),
+        ]),
+
+      ]),
+    ]),
+
+    // ══════════════════════════════
+    //  OPERATIONS
+    // ══════════════════════════════
+    d('Operations', C.ops, '⚙️', [
+      p('Ian Sklar', 'Chief Operating Officer', C.ops, 'COO', [
+
+        d('Equipment Production', C.mfg, '🏭', [
+          p('Mark Stoller', 'Director of Manufacturing', C.mfg, null, [
+
+            d('Fabrication', C.mfg, '🔥', [
+              p('Scott Fosdyck', 'Production Team Supervisor', C.mfg, null, [
+                p('Austin Beutel',    'TIG Welding Fabricator',               C.mfg),
+                p('Brice Carter',     'Finisher & Polisher I',                C.mfg),
+                p('Bryce Martin',     'TIG Welding Fabricator',               C.mfg),
+                p('Daniel Burnett',   'TIG Welding Fabricator',               C.mfg),
+                p('Gale Abernathy',   'Materials Prep Team Lead',             C.mfg),
+                p('Glenn Wagner',     'TIG Welding Fabricator',               C.mfg),
+                p('Gregory Brown',    'Lead Production Machine Operator',     C.mfg),
+                p('Jeremiah Clinch',  'Production Machine Operator',          C.mfg),
+                p('Kaden Swords',     'Machinist\'s Assistant',               C.mfg),
+                p('Landon Goode',     'Finisher & Polisher – Heat Tint Removal', C.mfg),
+                p('Nathaniel Kaiser', 'TIG Welding Fabricator',               C.mfg),
+                p('Salvador Araiza',  'TIG Welding Fabricator',               C.mfg),
+                p('Steven Fosdyck',   'TIG Welding Fabricator',               C.mfg),
+              ]),
+            ]),
+
+            d('Assembly', C.mfg, '🔧', [
+              p('Jay Wettstein', 'Assembly Team Supervisor', C.mfg, null, [
+                p('Brett Martin',        'Electromechanical Technician II', C.mfg),
+                p('Ethan Beutel',        'Electromechanical Technician II', C.mfg),
+                p('Geoffrey Hudson',     'Electromechanical Technician II', C.mfg),
+                p('Logan Schacherbauer', 'Mechanical Assembler',            C.mfg),
+                p('Shane Bowman',        'Electromechanical Technician II', C.mfg),
+              ]),
+            ]),
+
+          ]),
+        ]),
+
+        d('SUT Production', C.mfg, '⚗️', [
+          p('Zeke Honegger', 'Operations Manager', C.mfg, null, [
+            p('Kevin Mohrman', 'Production Planner', C.mfg),
+            p('Jeremy Sandlin', 'Production Manager', C.mfg, null, [
+              p('Chris Chiavini',  'Equipment Technician',   C.mfg),
+              p('Ethan Anderson',  'Inventory Assistant',    C.mfg),
+              p('Hinaben Patel', 'Production Supervisor 1st Shift', C.mfg, null, [
+                p('Bonnie Derixson',  'Assembler 1st Shift',     C.mfg),
+                p('Evelyn Humphrey',  'Assembler II 1st Shift',  C.mfg),
+                p('Gavin Larson',     'Assembler 1st Shift',     C.mfg),
+                p('James Lambert',    'Assembler II 1st Shift',  C.mfg),
+                p('Jeremiah Traver',  'R&D Technician',          C.mfg),
+                p('Meg Widger',       'Assembler 1st Shift',     C.mfg),
+                p('Melissa Knight',   'Assembler 1st Shift',     C.mfg),
+                p('Micheilei Traver', 'Assembler 1st Shift',     C.mfg),
+                p('Neha Patel',       'Assembler II 1st Shift',  C.mfg),
+              ]),
+            ]),
+          ]),
+        ]),
+
+        d('Supply Chain & Logistics', C.admin, '🚚', [
+          p('Brock Wiegand', 'Supply Chain Director', C.admin, 'SCL', [
+            p('Adam Funk', 'Purchasing Manager', C.admin),
+            p('Jonathan Aupperle', 'Shipping & Logistics Manager', C.admin, null, [
+              p('Andrew Martin', 'Material Handler', C.admin),
+            ]),
+          ]),
+        ]),
+
+        d('HR', C.admin, '🧑‍💼', [
+          p('Brock Wiegand', 'HR Manager', C.admin, 'HR', [
+            p('Cole Zeller', 'Administrative & Hospitality Coordinator', C.admin),
+          ]),
+        ]),
+
+        d('Project Management', C.pm, '📋', [
+          p('Chris Walther', 'Director of Project Management', C.pm, null, [
+            p('Brendan Smolen',  'Project Manager', C.pm),
+            p('Kenneth Ellison', 'Project Manager', C.pm),
+            p('Vincent Carter',  'Project Manager', C.pm),
+          ]),
+        ]),
+
+        d('Application Engineering', C.eng, '💡', [
+          p('Keith Beyer', 'Director of Engineering', C.eng, null, [
+
+            d('Mechanical Design', C.eng, '📐', [
+              p('Brock Emery',           'Design Engineer', C.eng),
+              p('Daniel Herrmann',       'Design Engineer', C.eng),
+              p('Jeffrey Decker',        'Design Engineer', C.eng),
+              p('Johnathan Lashbrook',   'Design Engineer', C.eng),
+              p('Joseph Rapp',           'Design Engineer', C.eng),
+              p('Kevin Zheng',           'Design Engineer', C.eng),
+              p('Nicholas Geiger',       'Design Engineer', C.eng),
+              p('Rodger Gallo',          'CAD Detailer',    C.eng),
+              p('Stephen Christianson',  'Design Engineer', C.eng),
+            ]),
+
+            d('Controls & Automation', C.eng, '🖥️', [
+              p('David Borre', 'Controls & Automation Manager', C.eng, null, [
+                p('Josh Smith',       'Sr. Process Automation Engineer',       C.eng),
+                p('Mark Graff',       'Controls Engineer',                     C.eng),
+                p('Zachary Harford',  'Process Controls Design Engineer II',   C.eng),
+              ]),
+            ]),
+
+          ]),
+        ]),
+
+        d('Quality', C.qual, '✅', [
+          p('Andrew Schrock', 'Director of Quality', C.qual, null, [
+            p('Cody Pollack',     'Quality Inspector',            C.qual),
+            p('Jacob Klauer',     'Quality Engineer',             C.qual),
+            p('Mitchell Menke',   'Quality Assistant',            C.qual),
+            p('Stephanie Cortez', 'SUT Quality Inspector 1st Shift', C.qual),
+          ]),
+        ]),
+
+      ]),
+    ]),
+
+    // ══════════════════════════════
+    //  FINANCE
+    // ══════════════════════════════
+    d('Finance', C.fin, '💰', [
+      p('Caleb Plattner', 'Chief Financial Officer', C.fin, 'CFO', [
+
+        d('Finance', C.fin, '📊', [
+          p('Dexter Hodel',  'Staff Accountant',  C.fin),
+          p('Philip Sauder', 'Purchasing Clerk',  C.fin),
+        ]),
+
+        d('Legal', C.fin, '⚖️', [
+          ph('No current members'),
+        ]),
+
+        d('Risk', C.fin, '🛡️', [
+          ph('No current members'),
+        ]),
+
+      ]),
+    ]),
+
+  ],
+};
+
+// ═══════════════════════════════════════════════════════
+//  STATE
+// ═══════════════════════════════════════════════════════
+const collapsed  = new Set();
+let selectedName = null;
+let searchQuery  = '';
+let currentView  = 'tree';
+
+// Collect all person nodes for search/list
+const allPeople = [];
+function collectPeople(node) {
+  if (node.type === 'person' || node.type === 'ceo') {
+    // avoid duplicates (Robert appears twice, Brock twice, Miranda twice)
+    if (!allPeople.find(p => p.name === node.name && p.title === node.title)) {
+      allPeople.push({ name: node.name, title: node.title, color: node.color });
+    }
+  }
+  (node.children || []).forEach(collectPeople);
+}
+collectPeople(TREE);
+
+// Default: collapse dept nodes with many children to keep it compact
+function autoCollapse(node, depth) {
+  if (node.type === 'dept' && depth >= 2) collapsed.add(node.id);
+  if ((node.type === 'person' || node.type === 'ceo') && depth >= 1 && (node.children||[]).length > 0) {
+    collapsed.add(node.name + '::person');
+  }
+  (node.children || []).forEach(c => autoCollapse(c, depth + 1));
+}
+autoCollapse(TREE, 0);
+
+function nodeId(node) {
+  if (node.type === 'dept') return node.id;
+  if (node.type === 'person' || node.type === 'ceo') return node.name + '::person';
+  return node.label;
+}
+
+// ═══════════════════════════════════════════════════════
+//  RENDER HELPERS
+// ═══════════════════════════════════════════════════════
+function guides(depth, conts, isLast) {
+  const el = document.createElement('div'); el.className = 'guides';
+  for (let i = 0; i < depth - 1; i++) {
+    const s = document.createElement('div');
+    s.className = 'guide-segment' + (conts[i] ? ' has-line' : '');
+    el.appendChild(s);
+  }
+  if (depth > 0) {
+    const e = document.createElement('div'); e.className = 'guide-segment elbow'; el.appendChild(e);
+  }
+  return el;
+}
+
+function toggleBtn(id) {
+  const t = document.createElement('div'); t.className = 'toggle-btn';
+  t.textContent = collapsed.has(id) ? '+' : '−';
+  t.addEventListener('click', ev => {
+    ev.stopPropagation();
+    collapsed.has(id) ? collapsed.delete(id) : collapsed.add(id);
+    renderTree();
+  });
+  return t;
+}
+
+function spacer() { const s = document.createElement('div'); s.className = 'toggle-spacer'; return s; }
+
+function countPeopleBelow(node) {
+  let n = 0;
+  if (node.type === 'person' || node.type === 'ceo') n = 1;
+  (node.children || []).forEach(c => n += countPeopleBelow(c));
+  return n;
+}
+
+// ═══════════════════════════════════════════════════════
+//  BUILD NODES
+// ═══════════════════════════════════════════════════════
+function buildNode(node, depth, isLast, conts) {
+  if (node.type === 'dept')        return buildDept(node, depth, isLast, conts);
+  if (node.type === 'person')      return buildPerson(node, depth, isLast, conts);
+  if (node.type === 'placeholder') return buildPlaceholder(node, depth, isLast, conts);
+  return document.createElement('li');
+}
+
+function buildDept(node, depth, isLast, conts) {
+  const id = node.id;
+  const isCollapsed = collapsed.has(id);
+  const hasKids = (node.children||[]).length > 0;
+  const li = document.createElement('li'); li.className = 'tree-node';
+
+  const row = document.createElement('div'); row.className = 'node-row';
+  row.appendChild(guides(depth, conts, isLast));
+  if (hasKids) row.appendChild(toggleBtn(id)); else row.appendChild(spacer());
+
+  const dn = document.createElement('div'); dn.className = 'dept-node';
+  dn.style.borderColor = 'transparent';
+
+  const strip = document.createElement('div'); strip.className = 'dept-strip';
+  strip.style.background = node.color;
+
+  const icon = document.createElement('span'); icon.className = 'dept-icon'; icon.textContent = node.icon;
+
+  const info = document.createElement('div'); info.style.minWidth = '0';
+  const lbl = document.createElement('div'); lbl.className = 'dept-label'; lbl.style.color = node.color; lbl.textContent = node.label;
+  info.appendChild(lbl);
+  if (node.sublabel) { const sl = document.createElement('div'); sl.className = 'dept-sublabel'; sl.textContent = node.sublabel; info.appendChild(sl); }
+
+  if (hasKids) {
+    const cnt = document.createElement('span'); cnt.className = 'dept-count';
+    cnt.textContent = countPeopleBelow(node) + ' people';
+    dn.appendChild(strip); dn.appendChild(icon); dn.appendChild(info); dn.appendChild(cnt);
+  } else {
+    dn.appendChild(strip); dn.appendChild(icon); dn.appendChild(info);
+  }
+
+  dn.addEventListener('click', () => {
+    collapsed.has(id) ? collapsed.delete(id) : collapsed.add(id);
+    renderTree();
+  });
+
+  row.appendChild(dn);
+  li.appendChild(row);
+
+  if (hasKids && !isCollapsed) {
+    const ul = document.createElement('ul'); ul.className = 'children-list';
+    node.children.forEach((child, i) => {
+      ul.appendChild(buildNode(child, depth + 1, i === node.children.length - 1, [...conts, !isLast]));
+    });
+    li.appendChild(ul);
+  }
+  return li;
+}
+
+function buildPerson(node, depth, isLast, conts) {
+  const id = nodeId(node);
+  const isCollapsed = collapsed.has(id);
+  const hasKids = (node.children||[]).length > 0;
+  const li = document.createElement('li'); li.className = 'tree-node';
+
+  const row = document.createElement('div'); row.className = 'node-row';
+  row.appendChild(guides(depth, conts, isLast));
+  if (hasKids) row.appendChild(toggleBtn(id)); else row.appendChild(spacer());
+
+  const [abg, afg] = bg(node.color);
+  const sel = selectedName === node.name + '::' + node.title;
+  const hi  = searchQuery && (node.name.toLowerCase().includes(searchQuery) || node.title.toLowerCase().includes(searchQuery));
+
+  const card = document.createElement('div');
+  card.className = 'node-card' + (sel?' selected':'') + (hi?' highlighted':'');
+
+  const av = document.createElement('div'); av.className = 'node-avatar';
+  av.style.background = abg; av.style.color = afg; av.textContent = initials(node.name);
+
+  const info = document.createElement('div'); info.className = 'node-info';
+  info.innerHTML = `<div class="node-name">${node.name}</div><div class="node-title">${node.title}</div>`;
+
+  card.appendChild(av); card.appendChild(info);
+
+  if (node.roleTag) {
+    const tag = document.createElement('span'); tag.className = 'node-role-tag';
+    tag.style.background = abg; tag.style.color = afg; tag.textContent = node.roleTag;
+    card.appendChild(tag);
+  }
+  if (hasKids) {
+    const badge = document.createElement('span'); badge.className = 'reports-count';
+    badge.textContent = (node.children||[]).filter(c=>c.type!=='dept').length +
+      (node.children||[]).filter(c=>c.type==='dept').length;
+    badge.title = 'direct reports / departments';
+    // just show count of immediate children
+    badge.textContent = (node.children||[]).length;
+    card.appendChild(badge);
+  }
+
+  card.addEventListener('click', () => {
+    selectedName = node.name + '::' + node.title;
+    showDetail(node);
+    renderTree();
+  });
+
+  row.appendChild(card);
+  li.appendChild(row);
+
+  if (hasKids && !isCollapsed) {
+    const ul = document.createElement('ul'); ul.className = 'children-list';
+    node.children.forEach((child, i) => {
+      ul.appendChild(buildNode(child, depth + 1, i === node.children.length - 1, [...conts, !isLast]));
+    });
+    li.appendChild(ul);
+  }
+  return li;
+}
+
+function buildPlaceholder(node, depth, isLast, conts) {
+  const li = document.createElement('li'); li.className = 'tree-node';
+  const row = document.createElement('div'); row.className = 'node-row';
+  row.appendChild(guides(depth, conts, isLast));
+  row.appendChild(spacer());
+  const ph = document.createElement('div'); ph.className = 'dept-placeholder'; ph.textContent = node.label;
+  row.appendChild(ph);
+  li.appendChild(row);
+  return li;
+}
+
+// ═══════════════════════════════════════════════════════
+//  RENDER TREE
+// ═══════════════════════════════════════════════════════
+function renderTree() {
+  const container = document.getElementById('treeRoot');
+  container.innerHTML = '';
+
+  if (searchQuery) {
+    const matches = allPeople.filter(p =>
+      p.name.toLowerCase().includes(searchQuery) || p.title.toLowerCase().includes(searchQuery)
+    );
+    document.getElementById('emptyMsg').style.display = matches.length ? 'none' : 'block';
+    const ul = document.createElement('ul'); ul.className = 'tree-root';
+    matches.forEach(person => {
+      const li = document.createElement('li'); li.className = 'tree-node';
+      const row = document.createElement('div'); row.className = 'node-row';
+      row.appendChild(spacer());
+      const [abg, afg] = bg(person.color || C.ops);
+      const sel = selectedName && selectedName.startsWith(person.name + '::');
+      const card = document.createElement('div');
+      card.className = 'node-card highlighted' + (sel ? ' selected' : '');
+      card.innerHTML = `
+        <div class="node-avatar" style="background:${abg};color:${afg}">${initials(person.name)}</div>
+        <div class="node-info">
+          <div class="node-name">${person.name}</div>
+          <div class="node-title">${person.title}</div>
+        </div>`;
+      card.addEventListener('click', () => {
+        selectedName = person.name + '::' + person.title;
+        showDetailByName(person.name, person.title);
+        renderTree();
+      });
+      row.appendChild(card); li.appendChild(row); ul.appendChild(li);
+    });
+    container.appendChild(ul);
+    return;
+  }
+
+  document.getElementById('emptyMsg').style.display = 'none';
+
+  // CEO row
+  const ceoWrap = document.createElement('div'); ceoWrap.className = 'ceo-wrap';
+  const ceoCard = document.createElement('div');
+  const ceoSel = selectedName === 'Robert Herrmann::Chief Executive Officer';
+  ceoCard.className = 'ceo-card' + (ceoSel ? ' selected' : '');
+  ceoCard.innerHTML = `
+    <div class="ceo-avatar">RH</div>
+    <div><div class="ceo-name">Robert Herrmann</div><div class="ceo-title">Chief Executive Officer</div></div>`;
+  ceoCard.addEventListener('click', () => {
+    selectedName = 'Robert Herrmann::Chief Executive Officer';
+    showDetailByName('Robert Herrmann', 'Chief Executive Officer');
+    renderTree();
+  });
+  ceoWrap.appendChild(ceoCard);
+  container.appendChild(ceoWrap);
+
+  // Top-level dept branches
+  const ul = document.createElement('ul'); ul.className = 'tree-root';
+  TREE.children.forEach((branch, i) => {
+    ul.appendChild(buildNode(branch, 1, i === TREE.children.length - 1, [true]));
+  });
+  container.appendChild(ul);
+}
+
+// ═══════════════════════════════════════════════════════
+//  DETAIL SIDEBAR
+// ═══════════════════════════════════════════════════════
+function findNode(name, title, nodes) {
+  for (const n of nodes) {
+    if ((n.type==='person'||n.type==='ceo') && n.name===name && n.title===title) return n;
+    if (n.children) {
+      const found = findNode(name, title, n.children);
+      if (found) return found;
+    }
+  }
+  return null;
+}
+
+function showDetail(node) {
+  const sidebar = document.getElementById('detailSidebar');
+  sidebar.classList.remove('empty');
+  const [abg, afg] = bg(node.color || C.ops);
+
+  const directPeople = (node.children||[]).filter(c => c.type==='person');
+  const deptChildren = (node.children||[]).filter(c => c.type==='dept');
+
+  sidebar.innerHTML = `
+    <div class="detail-avatar" style="background:${abg};color:${afg}">${initials(node.name)}</div>
+    <div class="detail-name">${node.name}</div>
+    <div class="detail-job-title">${node.title}</div>
+    ${node.roleTag ? `<div style="display:inline-block;padding:2px 7px;border-radius:4px;background:${abg};color:${afg};font-size:10px;font-weight:700;margin-bottom:10px">${node.roleTag}</div>` : ''}
+    ${deptChildren.length ? `
+      <div class="detail-section-title">Departments / Buckets</div>
+      ${deptChildren.map(dc=>`<div class="detail-report-row"><div class="detail-report-name" style="color:${dc.color}">${dc.icon} ${dc.label}</div></div>`).join('')}
+    ` : ''}
+    ${directPeople.length ? `
+      <div class="detail-section-title">Direct Reports (${directPeople.length})</div>
+      ${directPeople.map(r=>`
+        <div class="detail-report-row" onclick="clickPerson('${esc(r.name)}','${esc(r.title)}')">
+          <div class="detail-report-name">${r.name}</div>
+          <div class="detail-report-title">${r.title}</div>
+        </div>`).join('')}
+    ` : (!deptChildren.length ? `<div style="font-size:12px;color:var(--text-muted);margin-top:12px;border-top:1px solid var(--border);padding-top:12px">No direct reports</div>` : '')}
+  `;
+}
+
+function showDetailByName(name, title) {
+  // Find the first matching node
+  const node = findNode(name, title, [TREE]);
+  if (node) showDetail(node);
+  else {
+    // fallback for CEO
+    showDetail({ name, title, color: C.ops, children: TREE.children.filter(c=>c.type==='person') });
+  }
+}
+
+function clickPerson(name, title) {
+  selectedName = name + '::' + title;
+  showDetailByName(name, title);
+  renderTree();
+}
+
+function esc(s) { return s.replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'&quot;'); }
+
+// ═══════════════════════════════════════════════════════
+//  LIST VIEW
+// ═══════════════════════════════════════════════════════
+function renderList() {
+  const lv = document.getElementById('listView');
+  lv.innerHTML = '';
+  const arr = allPeople
+    .filter(p => !searchQuery || p.name.toLowerCase().includes(searchQuery) || p.title.toLowerCase().includes(searchQuery))
+    .sort((a,b) => a.name.localeCompare(b.name));
+  if (!arr.length) { lv.innerHTML='<div class="empty-msg">No results found.</div>'; return; }
+  arr.forEach(person => {
+    const [abg, afg] = bg(person.color || C.ops);
+    const hi = searchQuery && (person.name.toLowerCase().includes(searchQuery)||person.title.toLowerCase().includes(searchQuery));
+    const item = document.createElement('div');
+    item.className = 'list-item' + (hi?' highlighted':'');
+    item.innerHTML = `
+      <div class="li-avatar" style="background:${abg};color:${afg}">${initials(person.name)}</div>
+      <div>
+        <div class="li-name">${person.name}</div>
+        <div class="li-title">${person.title}</div>
+      </div>`;
+    item.addEventListener('click', () => {
+      selectedName = person.name + '::' + person.title;
+      showDetailByName(person.name, person.title);
+    });
+    lv.appendChild(item);
+  });
+}
+
+// ═══════════════════════════════════════════════════════
+//  CONTROLS
+// ═══════════════════════════════════════════════════════
+function setView(v) {
+  currentView = v;
+  document.getElementById('treePanel').style.display = v==='tree'?'block':'none';
+  document.getElementById('listView').classList.toggle('active', v==='list');
+  document.getElementById('btnTree').classList.toggle('active', v==='tree');
+  document.getElementById('btnList').classList.toggle('active', v==='list');
+  if (v==='list') renderList();
+}
+
+function expandAll() {
+  collapsed.clear();
+  renderTree();
+}
+
+function collapseAll() {
+  function collapseNode(node, depth) {
+    if (depth > 0) collapsed.add(nodeId(node));
+    (node.children||[]).forEach(c => collapseNode(c, depth+1));
+  }
+  TREE.children.forEach(c => collapseNode(c, 1));
+  renderTree();
+}
+
+document.getElementById('searchInput').addEventListener('input', e => {
+  searchQuery = e.target.value.toLowerCase().trim();
+  if (currentView==='tree') renderTree(); else renderList();
+});
+
+// Initial render
+renderTree();
+</script>
+</body>
+</html>
