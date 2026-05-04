@@ -277,7 +277,8 @@ const TREE = {
 
         d('Product Mgmt – SUT', C.pm, '📦', [
           p('Todd Herrmann', 'Product Manager – SUT', C.pm, null, [
-            p('Erik Nygard', 'Design Engineer', C.eng),
+            p('Erik Nygard',     'Design Engineer', C.eng),
+            p('Jeremiah Traver', 'R&D Technician',  C.mfg),
           ]),
         ]),
 
@@ -373,20 +374,25 @@ const TREE = {
 
         d('SUT Production', C.mfg, '⚗️', [
           p('Zeke Honegger', 'Operations Manager', C.mfg, null, [
+            p('Dan King',      'Manufacturing Engineer', C.mfg),
             p('Kevin Mohrman', 'Production Planner', C.mfg),
             p('Jeremy Sandlin', 'Production Manager', C.mfg, null, [
               p('Chris Chiavini',  'Equipment Technician',   C.mfg),
               p('Ethan Anderson',  'Inventory Assistant',    C.mfg),
               p('Hinaben Patel', 'Production Supervisor 1st Shift', C.mfg, null, [
-                p('Bonnie Derixson',  'Assembler 1st Shift',     C.mfg),
+                p('Bonnie Derixson',  'Assembler I - 1st Shift',     C.mfg),
                 p('Evelyn Humphrey',  'Assembler II 1st Shift',  C.mfg),
-                p('Gavin Larson',     'Assembler 1st Shift',     C.mfg),
+                p('Gavin Larson',     'Assembler I - 1st Shift',     C.mfg),
+                p('Haylie Wilson',    'Assembler I - 1st Shift', C.mfg),
                 p('James Lambert',    'Assembler II 1st Shift',  C.mfg),
-                p('Jeremiah Traver',  'R&D Technician',          C.mfg),
-                p('Meg Widger',       'Assembler 1st Shift',     C.mfg),
-                p('Melissa Knight',   'Assembler 1st Shift',     C.mfg),
-                p('Micheilei Traver', 'Assembler 1st Shift',     C.mfg),
+
+                p('Melissa Knight',   'Assembler I - 1st Shift',     C.mfg),
+                p('Micheilei Traver', 'Assembler I - 1st Shift',     C.mfg),
                 p('Neha Patel',       'Assembler II 1st Shift',  C.mfg),
+              ]),
+              p('Aaron Kaeding', 'Production Supervisor 2nd Shift', C.mfg, null, [
+                p('Andre Wright Jr.', 'Assembler I - 2nd Shift', C.mfg),
+                p('Jacquelin Sandlin', 'Assembler I - 2nd Shift', C.mfg),
               ]),
             ]),
           ]),
@@ -419,13 +425,15 @@ const TREE = {
           p('Keith Beyer', 'Director of Engineering', C.eng, null, [
 
             d('Mechanical Design', C.eng, '📐', [
-              p('Brock Emery',           'Design Engineer', C.eng),
+              p('Brock Emery',           'Design Engineer',         C.eng),
               p('Daniel Herrmann',       'Design Engineer', C.eng),
               p('Jeffrey Decker',        'Design Engineer', C.eng),
               p('Johnathan Lashbrook',   'Design Engineer', C.eng),
               p('Joseph Rapp',           'Design Engineer', C.eng),
               p('Kevin Zheng',           'Design Engineer', C.eng),
+              p('Leah Nika',             'Design Engineer Intern',   C.eng),
               p('Nicholas Geiger',       'Design Engineer', C.eng),
+              p('Noah Herrmann',         'Electrical Engineer Intern', C.eng),
               p('Rodger Gallo',          'CAD Detailer',    C.eng),
               p('Stephen Christianson',  'Design Engineer', C.eng),
             ]),
@@ -434,6 +442,7 @@ const TREE = {
               p('David Borre', 'Controls & Automation Manager', C.eng, null, [
                 p('Josh Smith',       'Sr. Process Automation Engineer',       C.eng),
                 p('Mark Graff',       'Controls Engineer',                     C.eng),
+                p('Samuel Wyant',     'Controls Engineer II',                  C.eng),
                 p('Zachary Harford',  'Process Controls Design Engineer',      C.eng),
               ]),
             ]),
@@ -442,7 +451,7 @@ const TREE = {
         ]),
 
         d('Quality', C.qual, '✅', [
-          p('Andrew Schrock', 'Director of Quality', C.qual, null, [
+          p('Andrew Schrock', 'Director of Operational Excellence and Continuous Improvement', C.qual, null, [
             p('Cody Pollack',     'Quality Inspector',            C.qual),
             p('Jacob Klauer',     'Quality Engineer',             C.qual),
             p('Mitchell Menke',   'Quality Assistant',            C.qual),
