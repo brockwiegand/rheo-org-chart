@@ -377,8 +377,9 @@ const TREE = {
             p('Dan King',      'Manufacturing Engineer', C.mfg),
             p('Kevin Mohrman', 'Production Planner', C.mfg),
             p('Jeremy Sandlin', 'Production Manager', C.mfg, null, [
-              p('Chris Chiavini',  'Equipment Technician',   C.mfg),
-              p('Ethan Anderson',  'Inventory Assistant',    C.mfg),
+              p('Chris Chiavini',  'Equipment Technician',        C.mfg),
+              p('Ethan Anderson',  'Inventory Assistant',         C.mfg),
+              p('Shiloh Herrmann', 'Inventory Assistant - Part Time', C.mfg),
               p('Hinaben Patel', 'Production Supervisor 1st Shift', C.mfg, null, [
                 p('Abigail Kern',      'Assembler I',                 C.mfg),
                 p('Andre Wright Jr.',  'Assembler I - 2nd Shift',     C.mfg),
@@ -390,6 +391,7 @@ const TREE = {
                 p('Melissa Knight',    'Assembler I - 1st Shift',     C.mfg),
                 p('Micheilei Traver',  'Assembler II',                C.mfg),
                 p('Neha Patel',        'Assembler III',               C.mfg),
+                p('Tyrell Mitchell',   'Assembler I',                 C.mfg),
               ]),
             ]),
           ]),
@@ -414,7 +416,7 @@ const TREE = {
 
         d('Project Management', C.pm, '📋', [
           p('Chris Walther', 'Director of Project Management', C.pm, null, [
-            p('Brendan Smolen',  'Project Manager', C.pm),
+            p('Brendan Smolen',  'Project Engineer', C.pm),
             p('Kenneth Ellison', 'Project Manager', C.pm),
             p('Vincent Carter',  'Project Manager', C.pm),
           ]),
@@ -756,6 +758,21 @@ function renderTree() {
 // ═══════════════════════════════════════════════════════
 //  DETAIL SIDEBAR
 // ═══════════════════════════════════════════════════════
+
+// Build a parent map: node unique key -> parent person node
+const parentMap = {};
+function buildParentMap(node, parentPerson) {
+  const key = node.name + '::' + node.title;
+  if (node.type === 'person' || node.type === 'ceo') {
+    if (parentPerson) parentMap[key] = parentPerson;
+    (node.children||[]).forEach(c => buildParentMap(c, node));
+  } else if (node.type === 'dept') {
+    // dept children inherit the same parentPerson
+    (node.children||[]).forEach(c => buildParentMap(c, parentPerson));
+  }
+}
+buildParentMap(TREE, null);
+
 function findNode(name, title, nodes) {
   for (const n of nodes) {
     if ((n.type==='person'||n.type==='ceo') && n.name===name && n.title===title) return n;
@@ -767,19 +784,43 @@ function findNode(name, title, nodes) {
   return null;
 }
 
+// Get all direct-report people for a node, including those nested under dept headers
+function getDirectReportPeople(node) {
+  const people = [];
+  (node.children||[]).forEach(child => {
+    if (child.type === 'person') {
+      people.push(child);
+    } else if (child.type === 'dept') {
+      // people directly inside this dept header count as direct reports
+      (child.children||[]).forEach(gc => {
+        if (gc.type === 'person') people.push(gc);
+      });
+    }
+  });
+  return people;
+}
+
 function showDetail(node) {
   const sidebar = document.getElementById('detailSidebar');
   sidebar.classList.remove('empty');
   const [abg, afg] = bg(node.color || C.ops);
 
-  const directPeople = (node.children||[]).filter(c => c.type==='person');
-  const deptChildren = (node.children||[]).filter(c => c.type==='dept');
+  const deptChildren  = (node.children||[]).filter(c => c.type==='dept');
+  const directPeople  = getDirectReportPeople(node);
+  const manager       = parentMap[node.name + '::' + node.title];
 
   sidebar.innerHTML = `
     <div class="detail-avatar" style="background:${abg};color:${afg}">${initials(node.name)}</div>
     <div class="detail-name">${node.name}</div>
     <div class="detail-job-title">${node.title}</div>
     ${node.roleTag ? `<div style="display:inline-block;padding:2px 7px;border-radius:4px;background:${abg};color:${afg};font-size:10px;font-weight:700;margin-bottom:10px">${node.roleTag}</div>` : ''}
+    <div class="detail-meta">
+      <span class="detail-label">Manager</span>
+      ${manager
+        ? `<span style="font-weight:500;cursor:pointer" onclick="clickPerson('${esc(manager.name)}','${esc(manager.title)}')">${manager.name}</span>
+           <div style="font-size:11px;color:var(--text-muted)">${manager.title}</div>`
+        : `<span style="font-size:12px;color:var(--text-muted)">—</span>`}
+    </div>
     ${deptChildren.length ? `
       <div class="detail-section-title">Departments / Buckets</div>
       ${deptChildren.map(dc=>`<div class="detail-report-row"><div class="detail-report-name" style="color:${dc.color}">${dc.icon} ${dc.label}</div></div>`).join('')}
