@@ -381,7 +381,6 @@ const TREE = {
             p('Kevin Mohrman', 'Production Planner', C.mfg),
             p('Jeremy Sandlin', 'Production Manager', C.mfg, null, [
               p('Abigail Kern',      'Assembler I',                    C.mfg),
-              p('Andre Wright Jr.',  'Assembler I - 2nd Shift',        C.mfg),
               p('Bonnie Derixson',   'Assembler II',                   C.mfg),
               p('Chris Chiavini',    'Equipment Technician',           C.mfg),
               p('Ethan Anderson',    'Inventory Assistant',            C.mfg),
@@ -389,11 +388,14 @@ const TREE = {
               p('Haylie Wilson',     'Assembler I - 1st Shift',        C.mfg),
               p('Hinaben Patel',     'Senior Assembler',               C.mfg),
               p('James Lambert',     'Assembler III',                  C.mfg),
-              p('Jacquelin Sandlin', 'Assembler I - 2nd Shift',        C.mfg),
               p('Melissa Knight',    'Assembler I - 1st Shift',        C.mfg),
               p('Micheilei Traver',  'Assembler II',                   C.mfg),
               p('Neha Patel',        'Assembler III',                  C.mfg),
               p('Shiloh Herrmann',   'Inventory Assistant - Part Time', C.mfg),
+              p('John Smith', 'Production Supervisor 2nd Shift', C.mfg, null, [
+                p('Andre Wright Jr.',  'Assembler I - 2nd Shift',      C.mfg),
+                p('Jacquelin Sandlin', 'Assembler I - 2nd Shift',      C.mfg),
+              ]),
             ]),
           ]),
         ]),
@@ -443,6 +445,7 @@ const TREE = {
 
             d('Controls & Automation', C.eng, '🖥️', [
               p('David Borre', 'Controls & Automation Manager', C.eng, null, [
+                p('Douglas Donaway',  'Sr. Controls Engineer',                 C.eng),
                 p('Josh Smith',       'Sr. Process Automation Engineer',       C.eng),
                 p('Mark Graff',       'Controls Engineer',                     C.eng),
                 p('Samuel Wyant',     'Controls Engineer II',                  C.eng),
