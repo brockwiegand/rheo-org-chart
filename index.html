@@ -294,27 +294,19 @@ const TREE = {
           p('Miranda Gudeman', 'Marketing Manager', C.sales),
         ]),
 
+        d('Customer Service', C.cc, '💬', [
+          p('Keith Wiegand', 'CustomerCare Manager', C.cc),
+        ]),
+
         d('Sales Director', C.sales, '🤝', [
           p('Stephen Hebel', 'Sales Director', C.sales, 'SD', [
-
-            d('Customer Service', C.cc, '💬', [
-              p('Keith Wiegand', 'CustomerCare Manager', C.cc),
-            ]),
-
-            d('Inside Sales', C.sales, '📞', [
-              p('Miranda Gudeman', 'Marketing Manager / ISM', C.sales, 'ISM', [
-                p('JC Dempsey', 'Inside Sales Manager', C.sales),
-              ]),
-            ]),
-
-            d('Direct Sales', C.sales, '🎯', [
-              p('Jeff Sallack',     'Business Development Manager', C.sales),
-              p('Joseph Klotzle',   'Account Manager',              C.sales),
-              p('Michael Stewart',  'Regional Sales Manager',       C.sales),
-              p('Neil Weaver',      'Regional Sales Manager',       C.sales),
-              p('Pedro Rosas',      'Regional Sales Manager',       C.sales),
-              p('Wayne Fearn',      'Regional Sales Manager',       C.sales),
-            ]),
+            p('JC Dempsey',      'Inside Sales Manager',        C.sales),
+            p('Jeff Sallack',    'Business Development Manager', C.sales),
+            p('Jeremy Balzer',   'Regional Sales Manager',       C.sales),
+            p('Michael Stewart', 'Regional Sales Manager',       C.sales),
+            p('Neil Weaver',     'Regional Sales Manager',       C.sales),
+            p('Pedro Rosas',     'Regional Sales Manager',       C.sales),
+            p('Wayne Fearn',     'Regional Sales Manager',       C.sales),
           ]),
         ]),
 
@@ -325,10 +317,10 @@ const TREE = {
         ]),
 
         d('Rheo GmbH', C.biz, '🌍', [
-          p('Daniel Christ', 'Managing Director – GmbH', C.biz, 'MD', [
-            p('Jeremy Balzer', 'Inside Sales Manager – GmbH', C.biz),
-          ]),
+          p('Daniel Christ', 'Managing Director – GmbH', C.biz, 'MD'),
         ]),
+
+        p('Joseph Klotzle', 'Account Manager', C.sales),
 
       ]),
     ]),
@@ -488,7 +480,6 @@ const TREE = {
 
         d('Finance', C.fin, '📊', [
           p('Dexter Hodel',  'Staff Accountant',  C.fin),
-          p('Philip Sauder', 'Purchasing Clerk',  C.fin),
         ]),
 
         d('Legal', C.fin, '⚖️', [
