@@ -308,7 +308,8 @@ const TREE = {
             p('Michael Stewart', 'Regional Sales Manager',       C.sales),
             p('Neil Weaver',     'Regional Sales Manager',       C.sales),
             p('Pedro Rosas',     'Regional Sales Manager',       C.sales),
-            p('Wayne Fearn',     'Regional Sales Manager',       C.sales),
+            p('Wayne Fearn',         'Regional Sales Manager',           C.sales),
+            p('Frederic Le Pape',   'Portfolio Manager - Containment',   C.sales),
           ]),
         ]),
 
@@ -322,7 +323,9 @@ const TREE = {
           p('Daniel Christ', 'Managing Director – GmbH', C.biz, 'MD'),
         ]),
 
-        p('Joseph Klotzle', 'Account Manager', C.sales),
+        d('Strategic Account Management', C.sales, '🎯', [
+          p('Joseph Klotzle', 'Account Manager', C.sales),
+        ]),
 
       ]),
     ]),
@@ -572,6 +575,21 @@ function countPeopleBelow(node) {
 // ═══════════════════════════════════════════════════════
 //  BUILD NODES
 // ═══════════════════════════════════════════════════════
+
+// Sort children: dept nodes alphabetically by label, then person nodes
+// alphabetically by first name.
+function sortedChildren(children) {
+  const depts  = children.filter(c => c.type === 'dept')
+                         .sort((a, b) => (a.label||'').localeCompare(b.label||''));
+  const people = children.filter(c => c.type !== 'dept')
+                         .sort((a, b) => {
+                           const an = (a.name || a.label || '').split(' ')[0].toLowerCase();
+                           const bn = (b.name || b.label || '').split(' ')[0].toLowerCase();
+                           return an.localeCompare(bn);
+                         });
+  return [...people, ...depts];
+}
+
 function buildNode(node, depth, isLast, conts) {
   if (node.type === 'dept')        return buildDept(node, depth, isLast, conts);
   if (node.type === 'person')      return buildPerson(node, depth, isLast, conts);
@@ -619,9 +637,10 @@ function buildDept(node, depth, isLast, conts) {
   li.appendChild(row);
 
   if (hasKids && !isCollapsed) {
+    const sorted = sortedChildren(node.children);
     const ul = document.createElement('ul'); ul.className = 'children-list';
-    node.children.forEach((child, i) => {
-      ul.appendChild(buildNode(child, depth + 1, i === node.children.length - 1, [...conts, !isLast]));
+    sorted.forEach((child, i) => {
+      ul.appendChild(buildNode(child, depth + 1, i === sorted.length - 1, [...conts, !isLast]));
     });
     li.appendChild(ul);
   }
@@ -678,9 +697,10 @@ function buildPerson(node, depth, isLast, conts) {
   li.appendChild(row);
 
   if (hasKids && !isCollapsed) {
+    const sorted = sortedChildren(node.children);
     const ul = document.createElement('ul'); ul.className = 'children-list';
-    node.children.forEach((child, i) => {
-      ul.appendChild(buildNode(child, depth + 1, i === node.children.length - 1, [...conts, !isLast]));
+    sorted.forEach((child, i) => {
+      ul.appendChild(buildNode(child, depth + 1, i === sorted.length - 1, [...conts, !isLast]));
     });
     li.appendChild(ul);
   }
